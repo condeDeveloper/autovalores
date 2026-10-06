@@ -1,0 +1,53 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Metodo iterativo de autovalor erra de um jeito silencioso: ele devolve
+      # um numero que mudou pouco na ultima iteracao, e "mudou pouco" nao e
+      # "esta certo". O juiz e a formula fechada em ordem dois e tres, mais o
+      # RESIDUO, que mede A*v menos L*v e e a definicao.
+      #
+      # E duas conferencias saem de graca e valem sempre: a soma dos autovalores
+      # e o traco e o produto e o determinante.
+      - name: testes
+        run: dotnet test testes/Autovalores.Testes/Autovalores.Testes.csproj -c Release --nologo -v q
+
+      - name: os autovalores exatos e as duas identidades
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- juiz
+
+      # No espelho o metodo da potencia diz que CONVERGIU, em dois passos, com
+      # residuo 0,38: o quociente de Rayleigh nunca muda porque trocar as duas
+      # coordenadas de lugar nao muda o quociente.
+      - name: o metodo da potencia e o que ele nao faz
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- potencia
+
+      - name: Jacobi e a quantidade que so cai
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- jacobi
+
+      - name: a fatoracao QR e a ortogonalidade perdida
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- qr
+
+      - name: o deslocamento de Wilkinson
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- deslocamento
+
+      - name: o condicionamento, que e da matriz e nao do metodo
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- condicionamento
